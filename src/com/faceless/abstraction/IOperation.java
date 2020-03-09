@@ -10,6 +10,11 @@ public interface IOperation<T> {
         return false;
     }
 
+    default boolean isAssociative()
+    {
+        return true;
+    }
+
     int getOperationPriority();
 
     int getArgumentCount();

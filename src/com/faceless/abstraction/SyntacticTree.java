@@ -30,15 +30,16 @@ public class SyntacticTree<T> {
         String[] subfolded = subTrees.stream()
                 .map(t -> addParenthesesIfNeeded(t.toExpression(),
                         t.operation.getOperationPriority(),
-                        operation.getOperationPriority()))
+                        operation.getOperationPriority(),
+                        operation.isAssociative()))
                 .toArray(String[]::new);
 
         return operation.getExpressionString(subfolded);
 
     }
 
-    public String addParenthesesIfNeeded(String expr, int exprPriorty, int operationPriority) {
-        if (exprPriorty < operationPriority && exprPriorty != -1)
+    public String addParenthesesIfNeeded(String expr, int exprPriorty, int operationPriority, boolean operationAssociative) {
+        if ((exprPriorty < operationPriority || exprPriorty == operationPriority && !operationAssociative) && exprPriorty != -1)
             return "(" + expr + ")";
         return expr;
     }
