@@ -50,4 +50,9 @@ public class SyntacticTree<T> {
                 .map(SyntacticTree::evaluate)
                 .toArray(arrayGenerator));
     }
+
+    public SyntacticTree<T> copy() {
+        var subCopies = this.subTrees.stream().map(SyntacticTree::copy);
+        return new SyntacticTree<>(arrayGenerator, this.operation, subCopies);
+    }
 }
