@@ -1,5 +1,7 @@
 package com.faceless.abstraction;
 
+import com.faceless.operations.Constant;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.IntFunction;
@@ -51,8 +53,37 @@ public class SyntacticTree<T> {
                 .toArray(arrayGenerator));
     }
 
+    public T evaluateAndDispose() {
+        T result = operation.apply(subTrees
+                .stream()
+                .map(SyntacticTree::evaluate)
+                .toArray(arrayGenerator));
+        dispose();
+        return result;
+    }
+
     public SyntacticTree<T> copy() {
         var subCopies = this.subTrees.stream().map(SyntacticTree::copy);
         return new SyntacticTree<>(arrayGenerator, this.operation, subCopies);
+    }
+
+    public void cut(int maxDepth, Constant<T> zero) {
+        if (maxDepth == 0) {
+            operation = zero;
+            subTrees.clear();
+            return;
+        }
+        for (var t : subTrees) {
+            t.cut(maxDepth - 1, zero);
+        }
+    }
+
+    public void dispose() {
+        for (var t : subTrees) {
+            t.dispose();
+        }
+        subTrees.clear();
+        arrayGenerator = null;
+        operation = null;
     }
 }
