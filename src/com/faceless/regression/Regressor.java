@@ -1,9 +1,11 @@
 package com.faceless.regression;
 
 import com.faceless.abstraction.SyntacticTree;
+import com.faceless.operations.Constant;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Regressor<T extends Number> {
@@ -18,29 +20,30 @@ public class Regressor<T extends Number> {
     private T[][] trainingValues;
     private T[] trainingAnswers;
     private double minDeviation = Double.MAX_VALUE / 2;
+
+
     private Consumer<String> writer = null;
+    private double maxDeviation = 1e50;
+    private Constant<T> zero;
 
     public Regressor(int populationSize, Map<String, T> variableDict, Generator<T> generator,
-                     int maxDepth, Combinator<T> combinator, Mutator<T> mutator) {
+                     int maxDepth, Combinator<T> combinator, Mutator<T> mutator, Constant<T> zero) {
         this.populationSize = populationSize;
-        population = new ArrayList<>();
+        this.population = new ArrayList<>();
         this.variableDict = variableDict;
         this.generator = generator;
         this.maxDepth = maxDepth;
         this.combinator = combinator;
         this.mutator = mutator;
+        this.zero = zero;
     }
 
-    public Regressor(int populationSize, Map<String, T> variableDict, Generator<T> generator,
-                     int maxDepth, Combinator<T> combinator, Mutator<T> mutator, Consumer<String> writer) {
-        this.populationSize = populationSize;
-        population = new ArrayList<>();
-        this.variableDict = variableDict;
-        this.generator = generator;
-        this.maxDepth = maxDepth;
-        this.combinator = combinator;
-        this.mutator = mutator;
+    public void setWriter(Consumer<String> writer) {
         this.writer = writer;
+    }
+
+    public void setMaxDeviation(double maxDeviation) {
+        this.maxDeviation = maxDeviation;
     }
 
     private void generatePopulation() {
@@ -56,7 +59,7 @@ public class Regressor<T extends Number> {
             simulationStep();
             if (minDeviation > 1e50) {
                 debug("Errored with high deviation");
-                return population.get(0);
+                return population.get(populationSize - 1);
             }
             debug("Simulation step; deviation=" + minDeviation);
         }
@@ -71,21 +74,23 @@ public class Regressor<T extends Number> {
         int generationNumber = 0;
         while (minDeviation > deviation) {
             simulationStep();
-            if (minDeviation > 1e50) {
+            if (minDeviation > maxDeviation) {
                 debug("Errored with high deviation");
-                return population.get(0);
+                return population.get(populationSize - 1);
             }
             if (minDeviation < minSimulationDeviation) {
                 minSimulationDeviation = minDeviation;
-                minTree = population.get(0).copy();
+                minTree = population.get(populationSize - 1).copy();
             }
             debug("Simulation step #" + generationNumber + "; deviation=" + minDeviation);
+            assert minTree != null;
+            debug("Min Deviation At All=" + minSimulationDeviation + "; minTree=" + minTree.toExpression());
             generationNumber++;
             if (generationNumber > maxGenerations)
                 return minTree;
 
         }
-        return population.get(0);
+        return population.get(populationSize - 1);
     }
 
     private void debug(String text) {
@@ -97,18 +102,20 @@ public class Regressor<T extends Number> {
         var okTrees = population.stream()
                 .sorted(Comparator.comparingDouble(this::evaluateTree).reversed())
                 .skip(populationSize / 2)
-                .map(mutator::mutate)
+                .map(t -> mutator.mutate(t))
+                .peek(t -> t.cut(maxDepth, zero))
                 .collect(Collectors.toList());
-        minDeviation = evaluateTree(okTrees.get(0));
+        minDeviation = evaluateTree(okTrees.get(okTrees.size() - 1));
         int length = okTrees.size();
         for (int i = 0; i < length; i++) {
             SyntacticTree<T> bTree = okTrees.get(i).copy();
             combinator.combine(bTree, okTrees.get((i + 1) % length));
             okTrees.add(bTree);
         }
-        for (int i = 0; i < okTrees.size(); i++) {
-            population = okTrees;
+        for (int i = 0; i < populationSize / 2; i++) {
+            population.get(i).dispose();
         }
+        population = okTrees;
     }
 
     @SuppressWarnings("RedundantCast")

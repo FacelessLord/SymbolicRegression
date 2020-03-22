@@ -18,15 +18,13 @@ public class Generator<T> {
     private IntFunction<T[]> arrayGenerator;
     private List<IOperation<T>> operationList;
     private Function<Random, Constant<T>> constantGenerator;
-    private List<String> variables;
-    private Map<String, T> variableDict;
+    private List<Variable<T>> variables;
 
-    public Generator(IntFunction<T[]> arrayGenerator, List<IOperation<T>> operationList, Function<Random, Constant<T>> constantGenerator, List<String> variables, Map<String, T> variableDict) {
+    public Generator(IntFunction<T[]> arrayGenerator, List<IOperation<T>> operationList, Function<Random, Constant<T>> constantGenerator, List<Variable<T>> variables) {
         this.arrayGenerator = arrayGenerator;
         this.operationList = operationList;
         this.constantGenerator = constantGenerator;
         this.variables = variables;
-        this.variableDict = variableDict;
     }
 
     private static Random random = new Random();
@@ -34,7 +32,7 @@ public class Generator<T> {
     public SyntacticTree<T> generateTree(int maxDepth) {
         if (maxDepth == 0) {
             if (random.nextBoolean()) {//Generate var
-                var variable = new Variable<>(variables.get(random.nextInt(variables.size())), variableDict);
+                var variable = variables.get(random.nextInt(variables.size()));
                 return new SyntacticTree<>(arrayGenerator, variable);
             } else {//Generate constant
                 var constant = constantGenerator.apply(random);
