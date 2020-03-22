@@ -2,7 +2,7 @@ package com.faceless.operations.doubles;
 
 import com.faceless.abstraction.BinaryOperation;
 
-public class DoubleSubOperation extends BinaryOperation<Double> {
+public class DoubleSubtractOperation extends BinaryOperation<Double> {
     @Override
     public String getExpressionString(String... args) {
         return args[0] + " - " + args[1];

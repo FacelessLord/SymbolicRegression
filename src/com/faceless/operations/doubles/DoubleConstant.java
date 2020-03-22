@@ -8,15 +8,16 @@ public class DoubleConstant extends Constant<Double> {
     }
 
     @Override
-    public final String getExpressionString(String... args) {
+    public String getExpressionString(String... args) {
         return getCutDouble(4);
     }
 
-    private String getCutDouble(int precision) {
+    protected String getCutDouble(int precision) {
         var str = value + "";
         if (str.contains(".")) {
             int pointPos = str.indexOf(".");
-            str = str.substring(0, Math.min(str.length() - pointPos, pointPos + precision));
+            str += "00000000000000000000";
+            str = str.substring(0, pointPos + Math.min(str.length() - pointPos, precision));
         }
         return str;
     }
